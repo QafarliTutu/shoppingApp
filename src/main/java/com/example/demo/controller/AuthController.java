@@ -2,6 +2,7 @@ package com.example.demo.controller;
 
 import com.example.demo.payload.request.LoginRequest;
 import com.example.demo.payload.request.SignUpRequest;
+import com.example.demo.payload.request.UpdateRequest;
 import com.example.demo.service.impl.UserServiceImpl;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
+import java.util.Map;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RequestMapping("/api/auth")
@@ -28,8 +30,12 @@ public class AuthController {
 
     @PostMapping("/signIn")
     public ResponseEntity<?> signIn(@Valid @RequestBody LoginRequest loginRequest, HttpServletRequest request){
-        log.info("{} {}", loginRequest.getEmail(),loginRequest.getPassword());
         return userService.login(loginRequest,request);
+    }
+
+    @PostMapping("/update")
+    public ResponseEntity<?> update(@Valid @RequestBody Map<String,String> updateRequest){
+        return userService.update(updateRequest);
     }
 
 }

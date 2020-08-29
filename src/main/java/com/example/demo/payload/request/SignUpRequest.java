@@ -1,5 +1,6 @@
 package com.example.demo.payload.request;
 
+import com.example.demo.enums.Language;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.validation.annotation.Validated;
@@ -35,7 +36,7 @@ public class SignUpRequest {
     private String mobNumber;
 
     @NotBlank
-    private String language;
+    private String  language;
 
     private Set<String> role;
 }

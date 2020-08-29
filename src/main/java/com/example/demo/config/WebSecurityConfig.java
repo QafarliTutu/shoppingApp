@@ -1,5 +1,6 @@
 package com.example.demo.config;
 
+import com.example.demo.service.impl.JwtUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,7 +26,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     @Autowired
-    private UserDetailsService jwtUserDetailsService;
+    private JwtUserDetailsService jwtUserDetailsService;
 
     @Bean
     public JwtRequestFilter jwtReqFilter(){return new JwtRequestFilter();}
@@ -52,16 +53,15 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.cors().and().csrf().disable()
-               // .exceptionHandling().authenticationEntryPoint(jwtAuthenticationEntryPoint).and()
+                .exceptionHandling().authenticationEntryPoint(jwtAuthenticationEntryPoint).and()
                 // make sure we use stateless session; session won't be used to
                 // store user's state.
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
                 // dont authenticate this particular request
-                .authorizeRequests().antMatchers("/api/auth/signIn").permitAll()
-                // all other requests need to be authenticated
+                .authorizeRequests().antMatchers("/api/auth/**").permitAll()
                 .anyRequest().authenticated();
 
-        // Add a filter to validate the tokens with every request
+        /// Add a filter to validate the tokens with every request
         httpSecurity.addFilterBefore(jwtReqFilter(), UsernamePasswordAuthenticationFilter.class);
     }
 }

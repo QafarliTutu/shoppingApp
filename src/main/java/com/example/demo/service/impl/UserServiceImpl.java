@@ -8,6 +8,7 @@ import com.example.demo.model.XUser;
 import com.example.demo.model.XUserDetails;
 import com.example.demo.payload.request.LoginRequest;
 import com.example.demo.payload.request.SignUpRequest;
+import com.example.demo.payload.request.UpdateRequest;
 import com.example.demo.payload.response.JwtResponse;
 import com.example.demo.payload.response.MessageResponse;
 import com.example.demo.repository.RoleRepo;
@@ -27,10 +28,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Log4j2
@@ -72,11 +70,9 @@ public class UserServiceImpl implements UserService {
                 .email(signUpRequest.getEmail())
                 .password(encoder.encode(signUpRequest.getPassword()))
                 .mobNumber(signUpRequest.getMobNumber())
+                .language(checkLanguage(signUpRequest.getLanguage()))
                 .status(false)
                 .build();
-        if(signUpRequest.getLanguage() == null){
-            xUser.setLanguage(Language.EN);
-        }
         Set<String> strRoles = signUpRequest.getRole();
         Set<Role> roles = new HashSet<>();
         if(strRoles == null){
@@ -113,24 +109,17 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public ResponseEntity<?> login(LoginRequest loginRequest, HttpServletRequest request) {
-        log.info("what about here?");
-        List<GrantedAuthority> grantedAuths = new ArrayList<>();
-
-
-        //validate and do your additionl logic and set the role type after your validation. in this code i am simply adding admin role type
-        grantedAuths.add(new SimpleGrantedAuthority("ROLE_USER" ));
-
+        log.info(String.format("User %s is trying to login. User - %s >>> User IP - %s", loginRequest.getEmail(),loginRequest.getEmail(), request.getRemoteAddr()));
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.getEmail(),loginRequest.getPassword(), grantedAuths)
+                new UsernamePasswordAuthenticationToken(loginRequest.getEmail(),loginRequest.getPassword())
         );
-        log.info("i am here");
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String jwt = jwtTokenUtil.generateToken(authentication);
         XUserDetails xUserDetails = (XUserDetails) authentication.getPrincipal();
         List<String> roles = xUserDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
-        log.info("here");
+        log.info(String.format("Success: User successfully login. User - %s >>> User IP - %s", loginRequest.getEmail(), request.getRemoteAddr()));
         return ResponseEntity.ok(
                 JwtResponse.builder()
                 .id(xUserDetails.getId())
@@ -144,5 +133,81 @@ public class UserServiceImpl implements UserService {
                 .build());
     }
 
+//    public ResponseEntity<?> update(UpdateRequest updateRequest) {
+//        Optional<XUser> byId = userRepo.findById(updateRequest.getId());
+//        if(byId.isPresent()){
+//            XUser xUser = byId.get();
+//            if(checkNull(updateRequest.getMobNumber())){
+//                if (userRepo.existsByMobNumber(updateRequest.getMobNumber())) {
+//                    log.info(String.format("Error: New Mobile Number is already in use. User - %s", xUser.getEmail()));
+//                    return ResponseEntity.badRequest().body(new MessageResponse(false, 2, "Error: Mobile Number is already in use."));
+//                }
+//                else xUser.setMobNumber(updateRequest.getMobNumber());
+//            }
+//            if(checkNull(updateRequest.getPassword()) && checkNull(updateRequest.getPasswordConfirm())){
+//                if (!updateRequest.getPassword().equals(updateRequest.getPasswordConfirm())) {
+//                    log.info(String.format("Error: Confirm Password doesn't match with Password. User - %s ", xUser.getEmail()));
+//                    return ResponseEntity.badRequest().body(new MessageResponse(false, 3, "Error: Confirm Password doesn't match with Password."));
+//
+//                }
+//                else xUser.setPassword(updateRequest.getPassword());
+//            }
+//            if(checkNull(updateRequest.getName())) xUser.setName(updateRequest.getName());
+//            if(checkNull(updateRequest.getLanguage().name())){
+//                Language language = checkLanguage(updateRequest.getLanguage().name());
+//                xUser.setLanguage(language);
+//
+//            }
+//            userRepo.save(xUser);
+//            log.info(String.format("Success: User successfully updated. User - %s ", xUser.getEmail()));
+//        }
+//    }
+
+    public ResponseEntity<?> update(Map<String, String> updateRequest) {
+        Optional<XUser> foundUser = userRepo.findById(Long.valueOf(updateRequest.get("id")));
+        if (foundUser.isPresent()){
+            XUser xUser = foundUser.get();
+            if(checkNull(updateRequest.get("mobNumber"))){
+                if (userRepo.existsByMobNumber(updateRequest.get("mobNumber"))) {
+                    log.info(String.format("Error: New Mobile Number is already in use. User - %s", xUser.getEmail()));
+                    return ResponseEntity.badRequest().body(new MessageResponse(false, 2, "Error: Mobile Number is already in use."));
+                }
+                else xUser.setMobNumber(updateRequest.get("mobNumber"));
+            }
+            if(checkNull(updateRequest.get("password")) && checkNull(updateRequest.get("passwordConfirm"))){
+                if (!updateRequest.get("password").equals(updateRequest.get("passwordConfirm"))) {
+                    log.info(String.format("Error: Confirm Password doesn't match with Password. User - %s ", xUser.getEmail()));
+                    return ResponseEntity.badRequest().body(new MessageResponse(false, 3, "Error: Confirm Password doesn't match with Password."));
+
+                }
+                else xUser.setPassword(updateRequest.get("password"));
+            }
+            if(checkNull(updateRequest.get("name"))) xUser.setName(updateRequest.get("name"));
+            if(checkNull(updateRequest.get("language"))){
+                Language language = checkLanguage(updateRequest.get("language"));
+                xUser.setLanguage(language);
+
+            }
+            userRepo.save(xUser);
+            log.info(String.format("Success: User successfully updated. User - %s ", xUser.getEmail()));
+            return ResponseEntity.ok().body(new MessageResponse(true,200,"Success: User successfully updated."));
+        }
+        else return ResponseEntity.badRequest().body(new MessageResponse(false,10,"Error: User not found."));
+    }
+
+    private Language checkLanguage(String language) {
+        switch (language){
+            case "AZ":
+                return Language.valueOf("AZ");
+            case "RU":
+                return Language.valueOf("RU");
+            default:
+                return Language.valueOf("EN");
+        }
+    }
+
+    public boolean checkNull(String field){
+        return field != null;
+    }
 }
 
