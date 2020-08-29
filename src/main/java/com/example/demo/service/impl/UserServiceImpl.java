@@ -8,7 +8,6 @@ import com.example.demo.model.XUser;
 import com.example.demo.model.XUserDetails;
 import com.example.demo.payload.request.LoginRequest;
 import com.example.demo.payload.request.SignUpRequest;
-import com.example.demo.payload.request.UpdateRequest;
 import com.example.demo.payload.response.JwtResponse;
 import com.example.demo.payload.response.MessageResponse;
 import com.example.demo.repository.RoleRepo;
@@ -133,35 +132,7 @@ public class UserServiceImpl implements UserService {
                 .build());
     }
 
-//    public ResponseEntity<?> update(UpdateRequest updateRequest) {
-//        Optional<XUser> byId = userRepo.findById(updateRequest.getId());
-//        if(byId.isPresent()){
-//            XUser xUser = byId.get();
-//            if(checkNull(updateRequest.getMobNumber())){
-//                if (userRepo.existsByMobNumber(updateRequest.getMobNumber())) {
-//                    log.info(String.format("Error: New Mobile Number is already in use. User - %s", xUser.getEmail()));
-//                    return ResponseEntity.badRequest().body(new MessageResponse(false, 2, "Error: Mobile Number is already in use."));
-//                }
-//                else xUser.setMobNumber(updateRequest.getMobNumber());
-//            }
-//            if(checkNull(updateRequest.getPassword()) && checkNull(updateRequest.getPasswordConfirm())){
-//                if (!updateRequest.getPassword().equals(updateRequest.getPasswordConfirm())) {
-//                    log.info(String.format("Error: Confirm Password doesn't match with Password. User - %s ", xUser.getEmail()));
-//                    return ResponseEntity.badRequest().body(new MessageResponse(false, 3, "Error: Confirm Password doesn't match with Password."));
-//
-//                }
-//                else xUser.setPassword(updateRequest.getPassword());
-//            }
-//            if(checkNull(updateRequest.getName())) xUser.setName(updateRequest.getName());
-//            if(checkNull(updateRequest.getLanguage().name())){
-//                Language language = checkLanguage(updateRequest.getLanguage().name());
-//                xUser.setLanguage(language);
-//
-//            }
-//            userRepo.save(xUser);
-//            log.info(String.format("Success: User successfully updated. User - %s ", xUser.getEmail()));
-//        }
-//    }
+
 
     public ResponseEntity<?> update(Map<String, String> updateRequest) {
         Optional<XUser> foundUser = userRepo.findById(Long.valueOf(updateRequest.get("id")));
