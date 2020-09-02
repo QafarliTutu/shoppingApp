@@ -14,8 +14,10 @@ import com.example.demo.repository.RoleRepo;
 import com.example.demo.repository.UserRepo;
 import com.example.demo.service.UserService;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mail.SimpleMailMessage;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -49,18 +51,24 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private JwtTokenUtil jwtTokenUtil;
 
+    @Autowired
+    private EmailSenderService senderService;
+
+    @Autowired
+    private Base64 base64;
+
     public ResponseEntity<?> save(SignUpRequest signUpRequest, HttpServletRequest request) {
-        log.info(String.format("User %s is trying to register. User - %s >>> User IP - %s", signUpRequest.getEmail(), signUpRequest.getEmail(), request.getRemoteAddr()));
+        log.info("User {} is trying to register. User - {} >>> User IP - {}", signUpRequest.getEmail(), signUpRequest.getEmail(), request.getRemoteAddr());
         if (userRepo.existsByEmail(signUpRequest.getEmail())) {
-            log.info(String.format("Error: Email is already in use. User - %s >>> User IP - %s", signUpRequest.getEmail(), request.getRemoteAddr()));
+            log.warn("Error: Email is already in use. User - {} >>> User IP - {}", signUpRequest.getEmail(), request.getRemoteAddr());
             return ResponseEntity.badRequest().body(new MessageResponse(false, 1, "Error: Email is already in use."));
         }
         if (userRepo.existsByMobNumber(signUpRequest.getMobNumber())) {
-            log.info(String.format("Error: Mobile Number is already in use. User - %s >>> User IP - %s", signUpRequest.getEmail(), request.getRemoteAddr()));
+            log.warn("Error: Mobile Number is already in use. User - {} >>> User IP - {}", signUpRequest.getEmail(), request.getRemoteAddr());
             return ResponseEntity.badRequest().body(new MessageResponse(false, 2, "Error: Mobile Number is already in use."));
         }
         if (!signUpRequest.getPassword().equals(signUpRequest.getPasswordConfirm())) {
-            log.info(String.format("Error: Confirm Password doesn't match with Password. User - %s >>> User IP - %s", signUpRequest.getEmail(), request.getRemoteAddr()));
+            log.warn("Error: Confirm Password doesn't match with Password. User - {} >>> User IP - {}", signUpRequest.getEmail(), request.getRemoteAddr());
             return ResponseEntity.badRequest().body(new MessageResponse(false, 3, "Error: Confirm Password doesn't match with Password."));
 
         }
@@ -74,27 +82,26 @@ public class UserServiceImpl implements UserService {
                 .build();
         Set<String> strRoles = signUpRequest.getRole();
         Set<Role> roles = new HashSet<>();
-        if(strRoles == null){
+        if (strRoles == null) {
             Role xUserRole = roleRepo.findByName(RoleEnum.ROLE_USER)
-                    .orElseThrow(()->new RuntimeException("Error: Role is not found."));
+                    .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
             roles.add(xUserRole);
-        }else {
-            strRoles.forEach(role ->{
-                switch (role){
-
+        } else {
+            strRoles.forEach(role -> {
+                switch (role) {
                     case "admin":
                         Role adminRole = roleRepo.findByName(RoleEnum.ROLE_ADMIN)
-                                .orElseThrow(()->new RuntimeException("Error: Role is not found."));
+                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
                         roles.add(adminRole);
                         break;
                     case "moderator":
                         Role modRole = roleRepo.findByName(RoleEnum.ROLE_MODERATOR)
-                                .orElseThrow(()->new RuntimeException("Error: Role is not found."));
+                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
                         roles.add(modRole);
                         break;
                     default:
                         Role userRole = roleRepo.findByName(RoleEnum.ROLE_USER)
-                                .orElseThrow(()-> new RuntimeException("Error: Role is not found."));
+                                .orElseThrow(() -> new RuntimeException("Error: Role is not found."));
                         roles.add(userRole);
                         break;
                 }
@@ -102,15 +109,42 @@ public class UserServiceImpl implements UserService {
         }
         xUser.setRoles(roles);
         userRepo.save(xUser);
-        log.info(String.format("Success: User successfully registered. User - %s >>> User IP - %s", signUpRequest.getEmail(), request.getRemoteAddr()));
+        log.info("Success: User successfully registered. User - {} >>> User IP - {}", signUpRequest.getEmail(), request.getRemoteAddr());
+        sendEmail(signUpRequest.getEmail());
+        log.info("Success: Activation email was sent successfully. User - {} >>> User IP - {}", signUpRequest.getEmail(), request.getRemoteAddr());
         return ResponseEntity.ok().body(new MessageResponse(true, 3, "Success: User successfully registered."));
+    }
+
+    private void sendEmail(String email) {
+        String encodedEmail = new String(base64.encode(email.getBytes()));
+        log.info(encodedEmail);
+        SimpleMailMessage mailMessage = new SimpleMailMessage();
+        mailMessage.setTo(email);
+        mailMessage.setSubject("Activate status.");
+        mailMessage.setFrom("myfirstcalculatorapp@gmail.com");
+        mailMessage.setText("To activate status, please click here: "
+                + "http://localhost:8080/api/auth/activateStatus?token="
+                + encodedEmail);
+        senderService.sendEmail(mailMessage);
+    }
+
+    public ResponseEntity<?> activate(String encodedEmail) {
+        String decodedEmail = new String(base64.decode(encodedEmail.getBytes()));
+        return userRepo.findByEmail(decodedEmail)
+                .map(user -> {
+                    user.setStatus(true);
+                    userRepo.save(user);
+                    log.info("Success: User Status activated successfully. User - {}", user.getEmail());
+                    return ResponseEntity.ok().body(new MessageResponse(true, 200, "Success: User Status activated successfully."));
+                })
+                .orElseGet(() -> ResponseEntity.badRequest().body(new MessageResponse(false, 100, "Error: User not found.")));
     }
 
     @Override
     public ResponseEntity<?> login(LoginRequest loginRequest, HttpServletRequest request) {
-        log.info(String.format("User %s is trying to login. User - %s >>> User IP - %s", loginRequest.getEmail(),loginRequest.getEmail(), request.getRemoteAddr()));
+        log.info("User {} is trying to login. User - {} >>> User IP - {}", loginRequest.getEmail(), loginRequest.getEmail(), request.getRemoteAddr());
         Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginRequest.getEmail(),loginRequest.getPassword())
+                new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword())
         );
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String jwt = jwtTokenUtil.generateToken(authentication);
@@ -118,56 +152,52 @@ public class UserServiceImpl implements UserService {
         List<String> roles = xUserDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
-        log.info(String.format("Success: User successfully login. User - %s >>> User IP - %s", loginRequest.getEmail(), request.getRemoteAddr()));
+        log.info("Success: User successfully login. User - {} >>> User IP - {}", loginRequest.getEmail(), request.getRemoteAddr());
         return ResponseEntity.ok(
                 JwtResponse.builder()
-                .id(xUserDetails.getId())
-                .name(xUserDetails.getName())
-                .email(xUserDetails.getEmail())
-                .mobNumber(xUserDetails.getMobNumber())
-                .language(xUserDetails.getLanguage())
-                .jwtToken(jwt)
-                .type("Bearer")
-                .roles(roles)
-                .build());
+                        .id(xUserDetails.getId())
+                        .name(xUserDetails.getName())
+                        .email(xUserDetails.getEmail())
+                        .mobNumber(xUserDetails.getMobNumber())
+                        .language(xUserDetails.getLanguage())
+                        .jwtToken(jwt)
+                        .type("Bearer")
+                        .roles(roles)
+                        .build());
     }
-
 
 
     public ResponseEntity<?> update(Map<String, String> updateRequest) {
         Optional<XUser> foundUser = userRepo.findById(Long.valueOf(updateRequest.get("id")));
-        if (foundUser.isPresent()){
+        if (foundUser.isPresent()) {
             XUser xUser = foundUser.get();
-            if(checkNull(updateRequest.get("mobNumber"))){
+            if (checkNull(updateRequest.get("mobNumber"))) {
                 if (userRepo.existsByMobNumber(updateRequest.get("mobNumber"))) {
-                    log.info(String.format("Error: New Mobile Number is already in use. User - %s", xUser.getEmail()));
+                    log.warn("Error: New Mobile Number is already in use. User - {}", xUser.getEmail());
                     return ResponseEntity.badRequest().body(new MessageResponse(false, 2, "Error: Mobile Number is already in use."));
-                }
-                else xUser.setMobNumber(updateRequest.get("mobNumber"));
+                } else xUser.setMobNumber(updateRequest.get("mobNumber"));
             }
-            if(checkNull(updateRequest.get("password")) && checkNull(updateRequest.get("passwordConfirm"))){
+            if (checkNull(updateRequest.get("password")) && checkNull(updateRequest.get("passwordConfirm"))) {
                 if (!updateRequest.get("password").equals(updateRequest.get("passwordConfirm"))) {
-                    log.info(String.format("Error: Confirm Password doesn't match with Password. User - %s ", xUser.getEmail()));
+                    log.warn("Error: Confirm Password doesn't match with Password. User - {} ", xUser.getEmail());
                     return ResponseEntity.badRequest().body(new MessageResponse(false, 3, "Error: Confirm Password doesn't match with Password."));
 
-                }
-                else xUser.setPassword(updateRequest.get("password"));
+                } else xUser.setPassword(encoder.encode(updateRequest.get("password")));
             }
-            if(checkNull(updateRequest.get("name"))) xUser.setName(updateRequest.get("name"));
-            if(checkNull(updateRequest.get("language"))){
+            if (checkNull(updateRequest.get("name"))) xUser.setName(updateRequest.get("name"));
+            if (checkNull(updateRequest.get("language"))) {
                 Language language = checkLanguage(updateRequest.get("language"));
                 xUser.setLanguage(language);
 
             }
             userRepo.save(xUser);
-            log.info(String.format("Success: User successfully updated. User - %s ", xUser.getEmail()));
-            return ResponseEntity.ok().body(new MessageResponse(true,200,"Success: User successfully updated."));
-        }
-        else return ResponseEntity.badRequest().body(new MessageResponse(false,10,"Error: User not found."));
+            log.info("Success: User successfully updated. User - {} ", xUser.getEmail());
+            return ResponseEntity.ok().body(new MessageResponse(true, 200, "Success: User successfully updated."));
+        } else return ResponseEntity.badRequest().body(new MessageResponse(false, 10, "Error: User not found."));
     }
 
     private Language checkLanguage(String language) {
-        switch (language){
+        switch (language) {
             case "AZ":
                 return Language.valueOf("AZ");
             case "RU":
@@ -177,8 +207,10 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    public boolean checkNull(String field){
+    public boolean checkNull(String field) {
         return field != null;
     }
+
+
 }
 

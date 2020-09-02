@@ -16,4 +16,5 @@ public interface UserRepo extends JpaRepository<XUser,Long> {
     boolean existsByEmail(String email);
 
     boolean existsByMobNumber(String number);
+
 }

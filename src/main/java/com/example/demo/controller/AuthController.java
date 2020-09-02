@@ -2,7 +2,6 @@ package com.example.demo.controller;
 
 import com.example.demo.payload.request.LoginRequest;
 import com.example.demo.payload.request.SignUpRequest;
-import com.example.demo.payload.request.UpdateRequest;
 import com.example.demo.service.impl.UserServiceImpl;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +18,7 @@ import java.util.Map;
 @RestController
 @Log4j2
 public class AuthController {
+
     @Autowired
     private  UserServiceImpl userService;
 
@@ -33,9 +33,6 @@ public class AuthController {
         return userService.login(loginRequest,request);
     }
 
-    @PostMapping("/update")
-    public ResponseEntity<?> update(@Valid @RequestBody Map<String,String> updateRequest){
-        return userService.update(updateRequest);
-    }
+
 
 }

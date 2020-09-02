@@ -21,4 +21,5 @@ public class JwtUserDetailsService implements UserDetailsService {
         XUser xUser = userRepo.findByEmail(email).orElseThrow(()-> new UsernameNotFoundException("User not found: "+email));
         return XUserDetails.build(xUser);
     }
+    //http://localhost:8080/activateStatus?token=aWJjZWxhbEBnbWFpbC5jb20=
 }

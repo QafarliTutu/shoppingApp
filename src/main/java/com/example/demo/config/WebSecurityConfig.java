@@ -1,6 +1,7 @@
 package com.example.demo.config;
 
 import com.example.demo.service.impl.JwtUserDetailsService;
+import org.apache.commons.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,6 +16,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
 
 
 @Configuration
@@ -42,6 +44,11 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public Base64 base64(){
+        return new Base64();
     }
 
     @Bean
