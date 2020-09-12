@@ -11,12 +11,10 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
-import java.util.Map;
 
 @CrossOrigin(origins = "*", maxAge = 3600)
 @RequestMapping("/api/auth")
 @RestController
-@Log4j2
 public class AuthController {
 
     @Autowired
@@ -25,7 +23,7 @@ public class AuthController {
 
     @PostMapping("/signUp")
     public ResponseEntity<?> signUp(@Valid @RequestBody SignUpRequest signUpRequest, HttpServletRequest request){
-        return userService.save(signUpRequest,request);
+        return userService.signUp(signUpRequest,request);
     }
 
     @PostMapping("/signIn")
@@ -33,6 +31,9 @@ public class AuthController {
         return userService.login(loginRequest,request);
     }
 
+//    public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication){
+//        return userService.logout(request,response,authentication);
+//    }
 
 
 }

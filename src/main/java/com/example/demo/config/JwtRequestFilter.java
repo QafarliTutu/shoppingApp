@@ -23,16 +23,17 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     private JwtUserDetailsService jwtUserDetailsService;
 
     @Autowired
-    private JwtTokenUtil jwtTokenUtil;
+    private JwtTokenService jwtTokenUtil;
 
     @Override
     protected void doFilterInternal(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, FilterChain filterChain) throws ServletException, IOException {
         try {
-            String jwt = null;
-            String header = httpServletRequest.getHeader("Authorization");
-            if(StringUtils.hasText(header) && header.startsWith("Bearer ")){
-                jwt = header.substring(7,header.length());
-            }
+//            String jwt = null;
+//            String header = httpServletRequest.getHeader("Authorization");
+//            if(StringUtils.hasText(header) && header.startsWith("Bearer ")){
+//                jwt = header.substring(7,header.length());
+//            }
+            String jwt = extractToken(httpServletRequest);
             if (jwt != null && jwtTokenUtil.validateToken(jwt)) {
                 String email = jwtTokenUtil.getUsernameFromToken(jwt);
                 UserDetails userDetails = jwtUserDetailsService.loadUserByUsername(email);
@@ -45,5 +46,14 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             log.info(String.format("User authentication couldn't set: [%s]",ex));
         }
         filterChain.doFilter(httpServletRequest,httpServletResponse);
+    }
+
+    public String extractToken(HttpServletRequest request){
+        String jwt = null;
+        String header = request.getHeader("Authorization");
+        if(StringUtils.hasText(header) && header.startsWith("Bearer ")){
+            jwt = header.substring(7,header.length());
+        }
+        return jwt;
     }
 }

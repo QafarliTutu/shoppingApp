@@ -6,6 +6,7 @@ import lombok.*;
 
 import javax.persistence.*;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Getter
@@ -38,18 +39,11 @@ public class XUser {
      inverseJoinColumns = @JoinColumn(name = "role_id"))
      private Set<Role> roles = new HashSet<>();
 
+     @OneToMany(mappedBy = "xuser",cascade = CascadeType.ALL)
+     private List<Item> itemList;
+
     @Override
     public String toString() {
-        return "XUser{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", email='" + email + '\'' +
-                ", password='" + password + '\'' +
-                ", mobNumber='" + mobNumber + '\'' +
-                ", language=" + language +
-                ", status=" + status +
-                '}';
+        return String.format("XUser{id=%d, name='%s', email='%s', password='%s', mobNumber='%s', language=%s, status=%s, roles=%s, itemList=%s}", id, name, email, password, mobNumber, language, status, roles, itemList);
     }
-
-
 }

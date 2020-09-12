@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -18,9 +19,9 @@ import java.util.Date;
  */
 
 @Log4j2
-@Component
+@Service
 @PropertySource("classpath:jwt.properties")
-public class JwtTokenUtil implements Serializable {
+public class JwtTokenService implements Serializable {
     private static final long serialVersionUID = -2550185165626007488L;
 
     @Value("${jwt.secret}")

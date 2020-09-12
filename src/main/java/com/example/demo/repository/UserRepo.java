@@ -17,4 +17,5 @@ public interface UserRepo extends JpaRepository<XUser,Long> {
 
     boolean existsByMobNumber(String number);
 
+
 }
