@@ -1,5 +1,6 @@
 package com.example.demo.controller;
 
+import com.example.demo.service.impl.UpdateService;
 import com.example.demo.service.impl.UserServiceImpl;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,16 +16,16 @@ import java.util.Map;
 public class UpdateController {
 
     @Autowired
-    private UserServiceImpl userService;
+    private UpdateService updateService;
 
     @PostMapping("/update")
     public ResponseEntity<?> update(@Valid @RequestBody Map<String,String> updateRequest){
-        return userService.update(updateRequest);
+        return updateService.update(updateRequest);
     }
 
     @PostMapping("/activateStatus")
     public ResponseEntity<?> activate(@RequestParam("token") String token){
-        return userService.activate(token);
+        return updateService.activate(token);
     }
 
 }

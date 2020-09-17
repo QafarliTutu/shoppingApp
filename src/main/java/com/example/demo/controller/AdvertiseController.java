@@ -31,8 +31,8 @@ public class AdvertiseController {
     @Autowired
     private AdvertiseService advService;
 
-    @PostMapping("/test")
-    public ResponseEntity<?> test(@Valid @RequestBody AdvertiseRequest advRequest, HttpServletRequest request) {
+    @PostMapping("/post")
+    public ResponseEntity<?> postAdv(@Valid @RequestBody AdvertiseRequest advRequest, HttpServletRequest request) {
         String jwt = getToken(request);
         return advService.postAdv(advRequest, jwt);
     }
